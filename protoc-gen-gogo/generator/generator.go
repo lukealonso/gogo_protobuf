@@ -35,9 +35,9 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /*
-	The code generator for the plugin for the Google protocol buffer compiler.
-	It generates Go code from the protocol buffer description files read by the
-	main routine.
+The code generator for the plugin for the Google protocol buffer compiler.
+It generates Go code from the protocol buffer description files read by the
+main routine.
 */
 package generator
 
@@ -690,6 +690,10 @@ var isGoPredeclaredIdentifier = map[string]bool{
 	"uint64":     true,
 	"uint8":      true,
 	"uintptr":    true,
+}
+
+func cleanImportPath(ip GoImportPath) GoImportPath {
+	return GoImportPath(strings.Split(string(ip), ";")[0])
 }
 
 func cleanPackageName(name string) GoPackageName {
@@ -1374,7 +1378,7 @@ func (g *Generator) generateImports() {
 	imports := make(map[GoImportPath]GoPackageName)
 	for i, s := range g.file.Dependency {
 		fd := g.fileByName(s)
-		importPath := fd.importPath
+		importPath := cleanImportPath(fd.importPath)
 		// Do not import our own package.
 		if importPath == g.file.importPath {
 			continue
@@ -1397,7 +1401,7 @@ func (g *Generator) generateImports() {
 		imports[importPath] = packageName
 	}
 	for importPath := range g.addedImports {
-		imports[importPath] = g.GoPackageName(importPath)
+		imports[cleanImportPath(importPath)] = g.GoPackageName(importPath)
 	}
 	// We almost always need a proto import.  Rather than computing when we
 	// do, which is tricky when there's a plugin, just import it and
@@ -1605,6 +1609,7 @@ func (g *Generator) generateEnum(enum *EnumDescriptor) {
 // The tag is a string like "varint,2,opt,name=fieldname,def=7" that
 // identifies details of the field for the protocol buffer marshaling and unmarshaling
 // code.  The fields are:
+//
 //	wire encoding
 //	protocol tag number
 //	opt,req,rep for optional, required, or repeated
@@ -1613,6 +1618,7 @@ func (g *Generator) generateEnum(enum *EnumDescriptor) {
 //	enum= the name of the enum type if it is an enum-typed field.
 //	proto3 if this field is in a proto3 message
 //	def= string representation of the default value, if any.
+//
 // The default value must be in a representation that can be used at run-time
 // to generate the default value. Thus bools become 0 and 1, for instance.
 func (g *Generator) goTag(message *Descriptor, field *descriptor.FieldDescriptorProto, wiretype string) string {
